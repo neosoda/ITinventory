@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Fabricant {
+  id          Int      @id @default(autoincrement())
+  nom         String   @unique
+  url         String?
+  support     String?
+  commentaire String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  modeles     Modele[]
+  
+  @@map("fabricants")
+}
+
+model Categorie {
+  id          Int      @id @default(autoincrement())
+  nom         String   @unique
+  icone       String?  // Nom de l'icône Lucide
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  modeles     Modele[]
+  
+  @@map("categories")
+}
+
+model Modele {
+  id            Int      @id @default(autoincrement())
+  nom           String
+  numero        String?  // Référence du modèle
+  fabricantId   Int
+  categorieId   Int
+  description   String?
+  specs         String?  // Spécifications techniques en JSON
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  fabricant     Fabricant @relation(fields: [fabricantId], references: [id], onDelete: Cascade)
+  categorie     Categorie @relation(fields: [categorieId], references: [id], onDelete: Cascade)
+  equipements   Equipement[]
+  
+  @@unique([fabricantId, categorieId, nom])
+  @@map("modeles")
+}
+
+model Statut {
+  id          Int      @id @default(autoincrement())
+  nom         String   @unique
+  type        String   // deployable, pending, archived, etc.
+  couleur     String?  // Code couleur hex
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  equipements Equipement[]
+  
+  @@map("statuts")
+}
+
+model Localisation {
+  id             Int      @id @default(autoincrement())
+  nom            String   @unique
+  batiment       String?
+  etage          String?
+  salle          String?
+  commentaire    String?
+  etablissementId Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  equipements    Equipement[]
+  etablissement  Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+  
+  @@map("localisations")
+}
+
+model Etablissement {
+  id          Int      @id @default(autoincrement())
+  nom         String   @unique
+  uai         String?
+  adresse     String?
+  telephone   String?
+  email       String?
+  commentaire String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  equipements   Equipement[]
+  supervisions  Supervision[]
+  localisations Localisation[]
+  
+  @@map("etablissements")
+}
+
+model Equipement {
+  id              Int      @id @default(autoincrement())
+  assetTag        String?  @unique  // Numéro d'inventaire unique
+  serial          String?  @unique  // Numéro de série
+  modeleId        Int
+  etablissementId Int
+  localisationId  Int?
+  statutId        Int
+  nom             String?  // Nom personnalisé de l'équipement
+  ip              String?
+  mac             String?
+  reseau          String?  // PEDA, MGMT, ADMIN, etc.
+  hostname        String?
+  os              String?
+  versionOs       String?
+  dateAchat       DateTime?
+  dateGarantie     DateTime?
+  prix            Float?
+  fournisseur     String?
+  facture         String?
+  notes           String?  // Notes générales
+  commentaire     String?  // Commentaires techniques
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  modele         Modele @relation(fields: [modeleId], references: [id], onDelete: Restrict)
+  etablissement  Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+  localisation   Localisation? @relation(fields: [localisationId], references: [id], onDelete: SetNull)
+  statut         Statut @relation(fields: [statutId], references: [id])
+  
+  historiques    HistoriqueEquipement[]
+  maintenances   Maintenance[]
+  
+  @@map("equipements")
+}
+
+model HistoriqueEquipement {
+  id          Int      @id @default(autoincrement())
+  equipementId Int
+  typeAction  String   // CREATE, UPDATE, DEPLOY, CHECKIN, CHECKOUT, etc.
+  ancienneValeur String? // Valeur avant le changement (JSON)
+  nouvelleValeur String? // Valeur après le changement (JSON)
+  utilisateur  String?  // Qui a fait l'action
+  commentaire String?
+  createdAt   DateTime @default(now())
+  
+  equipement  Equipement @relation(fields: [equipementId], references: [id], onDelete: Cascade)
+  
+  @@map("historique_equipements")
+}
+
+model Maintenance {
+  id          Int      @id @default(autoincrement())
+  equipementId Int
+  type        String   // PREVENTIVE, CORRECTIVE
+  titre       String
+  description String?
+  cout        Float?
+  dateDebut   DateTime?
+  dateFin     DateTime?
+  technicien  String?
+  statut      String   // PLANIFIEE, EN_COURS, TERMINEE, ANNULEE
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  equipement  Equipement @relation(fields: [equipementId], references: [id], onDelete: Cascade)
+  
+  @@map("maintenances")
+}
+
+model Supervision {
+  id                   Int      @id @default(autoincrement())
+  etablissementId      Int
+  switchFederateur     Int      @default(0)
+  switchExtremite      Int      @default(0)
+  bornesWifi           Int      @default(0)
+  gtcGtb               Int      @default(0)
+  serveursPhysiques    Int      @default(0)
+  nbVm                 Int      @default(0)
+  nbPostes             Int      @default(0)
+  commentaire          String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  etablissement        Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+  
+  @@map("supervision")
+}
