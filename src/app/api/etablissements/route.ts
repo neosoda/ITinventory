@@ -10,6 +10,7 @@ export async function GET() {
           select: {
             equipements: true,
             supervisions: true,
+            localisations: true,
           },
         },
       },
@@ -28,12 +29,23 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    
+    const nom = typeof data.nom === 'string' ? data.nom.trim() : '';
+
+    if (!nom) {
+      return NextResponse.json(
+        { error: 'Le nom de l\'établissement est requis.' },
+        { status: 400 }
+      );
+    }
+
     const etablissement = await db.etablissement.create({
       data: {
-        nom: data.nom,
-        uai: data.uai,
-        commentaire: data.commentaire,
+        nom,
+        uai: data.uai?.trim() || null,
+        adresse: data.adresse?.trim() || null,
+        telephone: data.telephone?.trim() || null,
+        email: data.email?.trim() || null,
+        commentaire: data.commentaire?.trim() || null,
       },
     });
 
