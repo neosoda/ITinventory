@@ -32,7 +32,8 @@ import {
   Calendar,
   DollarSign,
   Wrench,
-  Battery
+  Battery,
+  Pencil
 } from 'lucide-react';
 
 interface Fabricant {
@@ -308,6 +309,16 @@ export default function Home() {
     commentaire: '',
   });
 
+  const [editingEtablissement, setEditingEtablissement] = useState<Etablissement | null>(null);
+  const [editEtablissementData, setEditEtablissementData] = useState({
+    nom: '',
+    uai: '',
+    adresse: '',
+    telephone: '',
+    email: '',
+    commentaire: '',
+  });
+
   const [newFabricant, setNewFabricant] = useState({
     nom: '',
     url: '',
@@ -465,6 +476,42 @@ export default function Home() {
     }
   };
 
+  const openEditEtablissement = (etab: Etablissement) => {
+    setEditingEtablissement(etab);
+    setEditEtablissementData({
+      nom: etab.nom ?? '',
+      uai: etab.uai ?? '',
+      adresse: etab.adresse ?? '',
+      telephone: etab.telephone ?? '',
+      email: etab.email ?? '',
+      commentaire: etab.commentaire ?? '',
+    });
+  };
+
+  const resetEditEtablissement = () => {
+    setEditingEtablissement(null);
+    setEditEtablissementData({ nom: '', uai: '', adresse: '', telephone: '', email: '', commentaire: '' });
+  };
+
+  const handleUpdateEtablissement = async () => {
+    if (!editingEtablissement) return;
+
+    try {
+      const response = await fetch(`/api/etablissements/${editingEtablissement.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editEtablissementData),
+      });
+
+      if (response.ok) {
+        resetEditEtablissement();
+        await fetchData();
+      }
+    } catch (error) {
+      console.error('Error updating etablissement:', error);
+    }
+  };
+
   const handleAddFabricant = async () => {
     try {
       const response = await fetch('/api/fabricants', {
@@ -590,7 +637,7 @@ export default function Home() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Système d'Inventaire Avancé</h1>
+          <h1 className="text-3xl font-bold">Inventaire IT</h1>
           <p className="text-muted-foreground">Gestion complète inspirée de Snipe-IT</p>
         </div>
         <div className="flex gap-2">
@@ -1413,11 +1460,88 @@ export default function Home() {
                     {etab.commentaire && (
                       <p className="text-sm text-muted-foreground mt-2">{etab.commentaire}</p>
                     )}
+                    <div className="flex justify-end mt-4">
+                      <Button variant="outline" size="sm" onClick={() => openEditEtablissement(etab)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Modifier
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
+          <Dialog open={!!editingEtablissement} onOpenChange={(open) => !open && resetEditEtablissement()}>
+            {editingEtablissement && (
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Modifier l'établissement</DialogTitle>
+                  <DialogDescription>
+                    Mettez à jour les informations de l'établissement sélectionné.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="editNomEtablissement">Nom</Label>
+                    <Input
+                      id="editNomEtablissement"
+                      value={editEtablissementData.nom}
+                      onChange={(e) => setEditEtablissementData({ ...editEtablissementData, nom: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editUaiEtablissement">UAI</Label>
+                    <Input
+                      id="editUaiEtablissement"
+                      value={editEtablissementData.uai}
+                      onChange={(e) => setEditEtablissementData({ ...editEtablissementData, uai: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editAdresseEtablissement">Adresse</Label>
+                    <Input
+                      id="editAdresseEtablissement"
+                      value={editEtablissementData.adresse}
+                      onChange={(e) => setEditEtablissementData({ ...editEtablissementData, adresse: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editTelephoneEtablissement">Téléphone</Label>
+                    <Input
+                      id="editTelephoneEtablissement"
+                      value={editEtablissementData.telephone}
+                      onChange={(e) => setEditEtablissementData({ ...editEtablissementData, telephone: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editEmailEtablissement">Email</Label>
+                    <Input
+                      id="editEmailEtablissement"
+                      type="email"
+                      value={editEtablissementData.email}
+                      onChange={(e) => setEditEtablissementData({ ...editEtablissementData, email: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editCommentaireEtablissement">Commentaire</Label>
+                    <Textarea
+                      id="editCommentaireEtablissement"
+                      value={editEtablissementData.commentaire}
+                      onChange={(e) =>
+                        setEditEtablissementData({ ...editEtablissementData, commentaire: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button variant="outline" onClick={resetEditEtablissement}>
+                    Annuler
+                  </Button>
+                  <Button onClick={handleUpdateEtablissement}>Enregistrer</Button>
+                </div>
+              </DialogContent>
+            )}
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="administration" className="space-y-6">
