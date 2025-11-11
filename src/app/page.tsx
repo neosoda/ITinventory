@@ -11,12 +11,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Server, 
-  Wifi, 
-  Camera, 
-  Router, 
-  Monitor, 
+import {
+  Server,
+  Wifi,
+  Camera,
+  Router,
+  Monitor,
   Search,
   Plus,
   RefreshCw,
@@ -35,6 +35,10 @@ import {
   Battery,
   Pencil
 } from 'lucide-react';
+import StatsCards from '@/components/dashboard/stats-cards';
+import RecentEquipments from '@/components/dashboard/recent-equipments';
+import { LoadingSpinner, LoadingCard } from '@/components/ui/loading-spinner';
+import { ErrorDisplay } from '@/components/ui/error-boundary';
 
 interface Fabricant {
   id: number;
@@ -260,6 +264,7 @@ export default function Home() {
   const [equipements, setEquipements] = useState<Equipement[]>([]);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Filters
   const [selectedEtablissement, setSelectedEtablissement] = useState<string>('all');
@@ -360,6 +365,8 @@ export default function Home() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       const [fabRes, catRes, modRes, statRes, locRes, etabsRes, eqRes, dashRes] = await Promise.all([
         fetch('/api/fabricants'),
         fetch('/api/categories'),
@@ -370,6 +377,11 @@ export default function Home() {
         fetch('/api/equipements'),
         fetch('/api/dashboard'),
       ]);
+
+      // Vérifier si les réponses sont OK
+      if (!fabRes.ok || !catRes.ok || !modRes.ok || !statRes.ok || !locRes.ok || !etabsRes.ok || !eqRes.ok || !dashRes.ok) {
+        throw new Error('Une erreur est survenue lors du chargement des données');
+      }
 
       const [fabData, catData, modData, statData, locData, etabsData, eqData, dashData] = await Promise.all([
         fabRes.json(),
@@ -392,7 +404,7 @@ export default function Home() {
       setDashboardData(dashData);
     } catch (error) {
       console.error('Error fetching data:', error);
-      // Ignore clipboard errors as they don't affect functionality
+      setError(error instanceof Error ? error.message : 'Une erreur est survenue');
       if (error instanceof Error && error.message.includes('Clipboard')) {
         console.warn('Clipboard API blocked - this is expected in some environments');
       } else {
@@ -608,8 +620,8 @@ export default function Home() {
 
   const filteredEquipements = equipements.filter((eq) => {
     const matchesEtablissement = selectedEtablissement === 'all' || eq.etablissementId.toString() === selectedEtablissement;
-    const matchesCategorie = selectedCategorie === 'all' || eq.modele.categorieId.toString() === selectedCategorie;
-    const matchesFabricant = selectedFabricant === 'all' || eq.modele.fabricantId.toString() === selectedFabricant;
+    const matchesCategorie = selectedCategorie === 'all' || eq.modele.categorie.id.toString() === selectedCategorie;
+    const matchesFabricant = selectedFabricant === 'all' || eq.modele.fabricant.id.toString() === selectedFabricant;
     const matchesStatut = selectedStatut === 'all' || eq.statutId.toString() === selectedStatut;
     const matchesSearch = searchTerm === '' || 
       eq.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -626,10 +638,19 @@ export default function Home() {
   });
 
   if (loading) {
+    return <LoadingCard message="Chargement des données..." />;
+  }
+
+  if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <RefreshCw className="animate-spin h-8 w-8" />
-      </div>
+      <ErrorDisplay
+        title="Erreur de chargement"
+        description={error}
+        onRetry={() => {
+          setError(null);
+          fetchData();
+        }}
+      />
     );
   }
 
@@ -661,66 +682,33 @@ export default function Home() {
         <TabsContent value="dashboard" className="space-y-6">
           {dashboardData && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Établissements</CardTitle>
-                    <Building className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{dashboardData.counts.etablissements}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Équipements</CardTitle>
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{dashboardData.counts.equipements}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Modèles</CardTitle>
-                    <Settings className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{dashboardData.counts.modeles}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Valeur Totale</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {dashboardData.valueStats._sum.prix 
-                        ? `${dashboardData.valueStats._sum.prix.toLocaleString('fr-FR')} €`
-                        : 'N/A'
-                      }
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Stats Cards */}
+              <StatsCards data={dashboardData} />
+              
+              {/* Charts Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Status Distribution */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Équipements par catégorie</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <Activity className="h-5 w-5" />
+                      Statut des équipements
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {dashboardData.categoriesWithCounts.map((cat) => {
-                        const Icon = getCategoryIcon(cat.icone);
+                      {dashboardData.equipementsByStatut.map((statut) => {
+                        const statutInfo = statuts.find(s => s.id === statut.statutId);
                         return (
-                          <div key={cat.id} className="flex items-center justify-between">
+                          <div key={statut.statutId} className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <Icon className="h-4 w-4" />
-                              <span className="font-medium">{cat.nom}</span>
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: statutInfo?.couleur || '#6b7280' }}
+                              />
+                              <span className="text-sm">{statutInfo?.nom || 'Inconnu'}</span>
                             </div>
-                            <Badge variant="secondary">{cat._count.modeles} modèles</Badge>
+                            <Badge variant="secondary">{statut._count.statutId}</Badge>
                           </div>
                         );
                       })}
@@ -728,41 +716,39 @@ export default function Home() {
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Équipements récents</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {dashboardData.recentEquipements.map((eq) => {
-                        const Icon = getCategoryIcon(eq.modele.categorie.icone);
-                        return (
-                          <div key={eq.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Icon className="h-4 w-4" />
-                              <div>
-                                <p className="font-medium">{eq.nom || eq.assetTag || 'N/A'}</p>
-                                <p className="text-sm text-muted-foreground">{eq.modele.fabricant.nom} {eq.modele.nom}</p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <Badge 
-                                variant="secondary"
-                                style={{ backgroundColor: getStatusColor(eq.statut.couleur), color: 'white' }}
-                              >
-                                {eq.statut.nom}
-                              </Badge>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(eq.createdAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
+                {/* Recent Equipments */}
+                <RecentEquipments equipements={dashboardData.recentEquipements} />
               </div>
+
+              {/* Quick Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Plus className="h-5 w-5" />
+                    Actions rapides
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Button variant="outline" className="h-20 flex-col gap-2">
+                      <Package className="h-6 w-6" />
+                      <span>Ajouter équipement</span>
+                    </Button>
+                    <Button variant="outline" className="h-20 flex-col gap-2">
+                      <Server className="h-6 w-6" />
+                      <span>Nouveau modèle</span>
+                    </Button>
+                    <Button variant="outline" className="h-20 flex-col gap-2">
+                      <Building className="h-6 w-6" />
+                      <span>Nouveau site</span>
+                    </Button>
+                    <Button variant="outline" className="h-20 flex-col gap-2">
+                      <Users className="h-6 w-6" />
+                      <span>Importer CSV</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </>
           )}
         </TabsContent>
