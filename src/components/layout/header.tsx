@@ -20,10 +20,10 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
-        {/* Page Title */}
+        {/* Page Title - Static since we removed sidebar navigation */}
         <div className="flex-1">
           <h1 className="text-lg font-semibold text-foreground">
-            Tableau de bord
+            IT Inventory - Gestion de parc informatique
           </h1>
         </div>
 

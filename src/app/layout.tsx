@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 
 const geistSans = Geist({
@@ -57,16 +56,13 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 dark:bg-gray-900`}
       >
         <ErrorBoundary>
-          <div className="flex h-screen">
-            <Sidebar />
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <Header />
-              <main className="flex-1 overflow-y-auto">
-                <div className="container mx-auto p-6">
-                  {children}
-                </div>
-              </main>
-            </div>
+          <div className="flex flex-col h-screen">
+            <Header />
+            <main className="flex-1 overflow-y-auto">
+              <div className="container mx-auto p-6">
+                {children}
+              </div>
+            </main>
           </div>
         </ErrorBoundary>
         <Toaster />

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -502,7 +501,14 @@ export default function Home() {
 
   const resetEditEtablissement = () => {
     setEditingEtablissement(null);
-    setEditEtablissementData({ nom: '', uai: '', adresse: '', telephone: '', email: '', commentaire: '' });
+    setEditEtablissementData({
+      nom: '',
+      uai: '',
+      adresse: '',
+      telephone: '',
+      email: '',
+      commentaire: '',
+    });
   };
 
   const handleUpdateEtablissement = async () => {
@@ -510,7 +516,7 @@ export default function Home() {
 
     try {
       const response = await fetch(`/api/etablissements/${editingEtablissement.id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editEtablissementData),
       });
@@ -614,10 +620,6 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const filteredEquipements = equipements.filter((eq) => {
     const matchesEtablissement = selectedEtablissement === 'all' || eq.etablissementId.toString() === selectedEtablissement;
     const matchesCategorie = selectedCategorie === 'all' || eq.modele.categorie.id.toString() === selectedCategorie;
@@ -669,108 +671,69 @@ export default function Home() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="equipements">Équipements</TabsTrigger>
-          <TabsTrigger value="modeles">Modèles</TabsTrigger>
-          <TabsTrigger value="fabricants">Fabricants</TabsTrigger>
-          <TabsTrigger value="etablissements">Établissements</TabsTrigger>
-          <TabsTrigger value="administration">Administration</TabsTrigger>
-        </TabsList>
+      {/* Dashboard Content */}
+      {activeTab === 'dashboard' && dashboardData && (
+        <div className="space-y-6">
+          {/* Stats Cards */}
+          <StatsCards data={dashboardData} />
+          
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Status Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Statut des équipements
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {dashboardData.equipementsByStatut.map((statut) => {
+                    const statutInfo = statuts.find(s => s.id === statut.statutId);
+                    return (
+                      <div key={statut.statutId} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: statutInfo?.couleur || '#6b7280' }}
+                          />
+                          <span className="text-sm">{statutInfo?.nom || 'Inconnu'}</span>
+                        </div>
+                        <Badge variant="secondary">{statut._count.statutId}</Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
 
-        <TabsContent value="dashboard" className="space-y-6">
-          {dashboardData && (
-            <>
-              {/* Stats Cards */}
-              <StatsCards data={dashboardData} />
-              
-              {/* Charts Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Status Distribution */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Activity className="h-5 w-5" />
-                      Statut des équipements
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {dashboardData.equipementsByStatut.map((statut) => {
-                        const statutInfo = statuts.find(s => s.id === statut.statutId);
-                        return (
-                          <div key={statut.statutId} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: statutInfo?.couleur || '#6b7280' }}
-                              />
-                              <span className="text-sm">{statutInfo?.nom || 'Inconnu'}</span>
-                            </div>
-                            <Badge variant="secondary">{statut._count.statutId}</Badge>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
+            {/* Recent Equipments */}
+            <RecentEquipments equipements={dashboardData.recentEquipements} />
+          </div>
+        </div>
+      )}
 
-                {/* Recent Equipments */}
-                <RecentEquipments equipements={dashboardData.recentEquipements} />
-              </div>
-
-              {/* Quick Actions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Plus className="h-5 w-5" />
-                    Actions rapides
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Button variant="outline" className="h-20 flex-col gap-2">
-                      <Package className="h-6 w-6" />
-                      <span>Ajouter équipement</span>
-                    </Button>
-                    <Button variant="outline" className="h-20 flex-col gap-2">
-                      <Server className="h-6 w-6" />
-                      <span>Nouveau modèle</span>
-                    </Button>
-                    <Button variant="outline" className="h-20 flex-col gap-2">
-                      <Building className="h-6 w-6" />
-                      <span>Nouveau site</span>
-                    </Button>
-                    <Button variant="outline" className="h-20 flex-col gap-2">
-                      <Users className="h-6 w-6" />
-                      <span>Importer CSV</span>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </>
-          )}
-        </TabsContent>
-
-        <TabsContent value="equipements" className="space-y-6">
+      {/* Equipements Content */}
+      {activeTab === 'equipements' && (
+        <div className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher des équipements..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8 w-64"
+              />
+            </div>
             <div className="flex items-center gap-4 flex-wrap">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64"
-                />
-              </div>
               <Select value={selectedEtablissement} onValueChange={setSelectedEtablissement}>
                 <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Établissement" />
+                  <SelectValue placeholder="Tous les établissements" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="all">Tous les établissements</SelectItem>
                   {etablissements.map((etab) => (
                     <SelectItem key={etab.id} value={etab.id.toString()}>
                       {etab.nom}
@@ -780,34 +743,40 @@ export default function Home() {
               </Select>
               <Select value={selectedCategorie} onValueChange={setSelectedCategorie}>
                 <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Catégorie" />
+                  <SelectValue placeholder="Toutes les catégories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Toutes</SelectItem>
+                  <SelectItem value="all">Toutes les catégories</SelectItem>
                   {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id.toString()}>{cat.nom}</SelectItem>
+                    <SelectItem key={cat.id} value={cat.id.toString()}>
+                      {cat.nom}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Select value={selectedFabricant} onValueChange={setSelectedFabricant}>
                 <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Fabricant" />
+                  <SelectValue placeholder="Tous les fabricants" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="all">Tous les fabricants</SelectItem>
                   {fabricants.map((fab) => (
-                    <SelectItem key={fab.id} value={fab.id.toString()}>{fab.nom}</SelectItem>
+                    <SelectItem key={fab.id} value={fab.id.toString()}>
+                      {fab.nom}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Select value={selectedStatut} onValueChange={setSelectedStatut}>
                 <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Statut" />
+                  <SelectValue placeholder="Tous les statuts" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
                   {statuts.map((stat) => (
-                    <SelectItem key={stat.id} value={stat.id.toString()}>{stat.nom}</SelectItem>
+                    <SelectItem key={stat.id} value={stat.id.toString()}>
+                      {stat.nom}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -816,30 +785,31 @@ export default function Home() {
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Ajouter un équipement
+                  Ajouter équipement
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Ajouter un équipement</DialogTitle>
+                  <DialogTitle>Ajouter un nouvel équipement</DialogTitle>
                   <DialogDescription>
-                    Remplissez les informations pour ajouter un nouvel équipement.
+                    Remplissez les informations de l'équipement ci-dessous.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="assetTag">Asset Tag</Label>
+                    <Label htmlFor="assetTag">Tag d'actif</Label>
                     <Input
                       id="assetTag"
+                      placeholder="EX-001"
                       value={newEquipment.assetTag}
                       onChange={(e) => setNewEquipment({...newEquipment, assetTag: e.target.value})}
-                      placeholder="Numéro d'inventaire"
                     />
                   </div>
                   <div>
                     <Label htmlFor="serial">Numéro de série</Label>
                     <Input
                       id="serial"
+                      placeholder="ABC123XYZ"
                       value={newEquipment.serial}
                       onChange={(e) => setNewEquipment({...newEquipment, serial: e.target.value})}
                     />
@@ -848,7 +818,7 @@ export default function Home() {
                     <Label htmlFor="modele">Modèle</Label>
                     <Select value={newEquipment.modeleId} onValueChange={(value) => setNewEquipment({...newEquipment, modeleId: value})}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner" />
+                        <SelectValue placeholder="Sélectionner un modèle" />
                       </SelectTrigger>
                       <SelectContent>
                         {modeles.map((mod) => (
@@ -863,7 +833,7 @@ export default function Home() {
                     <Label htmlFor="etablissement">Établissement</Label>
                     <Select value={newEquipment.etablissementId} onValueChange={(value) => setNewEquipment({...newEquipment, etablissementId: value})}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner" />
+                        <SelectValue placeholder="Sélectionner un établissement" />
                       </SelectTrigger>
                       <SelectContent>
                         {etablissements.map((etab) => (
@@ -878,15 +848,13 @@ export default function Home() {
                     <Label htmlFor="localisation">Localisation</Label>
                     <Select value={newEquipment.localisationId} onValueChange={(value) => setNewEquipment({...newEquipment, localisationId: value})}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner" />
+                        <SelectValue placeholder="Sélectionner une localisation" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="empty">Aucune</SelectItem>
-                        {localisations
-                          .filter(loc => loc.etablissementId.toString() === newEquipment.etablissementId || !newEquipment.etablissementId)
-                          .map((loc) => (
+                        {localisations.map((loc) => (
                           <SelectItem key={loc.id} value={loc.id.toString()}>
-                            {loc.nom}
+                            {loc.etablissement.nom} - {loc.nom} ({loc.batiment} - {loc.etage} - {loc.salle})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -896,7 +864,7 @@ export default function Home() {
                     <Label htmlFor="statut">Statut</Label>
                     <Select value={newEquipment.statutId} onValueChange={(value) => setNewEquipment({...newEquipment, statutId: value})}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner" />
+                        <SelectValue placeholder="Sélectionner un statut" />
                       </SelectTrigger>
                       <SelectContent>
                         {statuts.map((stat) => (
@@ -908,9 +876,10 @@ export default function Home() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="nom">Nom personnalisé</Label>
+                    <Label htmlFor="nom">Nom</Label>
                     <Input
                       id="nom"
+                      placeholder="Nom de l'équipement"
                       value={newEquipment.nom}
                       onChange={(e) => setNewEquipment({...newEquipment, nom: e.target.value})}
                     />
@@ -919,6 +888,7 @@ export default function Home() {
                     <Label htmlFor="ip">Adresse IP</Label>
                     <Input
                       id="ip"
+                      placeholder="192.168.1.100"
                       value={newEquipment.ip}
                       onChange={(e) => setNewEquipment({...newEquipment, ip: e.target.value})}
                     />
@@ -927,6 +897,7 @@ export default function Home() {
                     <Label htmlFor="mac">Adresse MAC</Label>
                     <Input
                       id="mac"
+                      placeholder="AA:BB:CC:DD:EE:FF"
                       value={newEquipment.mac}
                       onChange={(e) => setNewEquipment({...newEquipment, mac: e.target.value})}
                     />
@@ -935,15 +906,16 @@ export default function Home() {
                     <Label htmlFor="reseau">Réseau</Label>
                     <Input
                       id="reseau"
+                      placeholder="MGMT, VLAN10, etc."
                       value={newEquipment.reseau}
                       onChange={(e) => setNewEquipment({...newEquipment, reseau: e.target.value})}
-                      placeholder="PEDA, MGMT, ADMIN..."
                     />
                   </div>
                   <div>
                     <Label htmlFor="hostname">Hostname</Label>
                     <Input
                       id="hostname"
+                      placeholder="SRV-WEB-01"
                       value={newEquipment.hostname}
                       onChange={(e) => setNewEquipment({...newEquipment, hostname: e.target.value})}
                     />
@@ -952,6 +924,7 @@ export default function Home() {
                     <Label htmlFor="os">Système d'exploitation</Label>
                     <Input
                       id="os"
+                      placeholder="Windows Server 2022"
                       value={newEquipment.os}
                       onChange={(e) => setNewEquipment({...newEquipment, os: e.target.value})}
                     />
@@ -960,6 +933,7 @@ export default function Home() {
                     <Label htmlFor="versionOs">Version OS</Label>
                     <Input
                       id="versionOs"
+                      placeholder="21H2"
                       value={newEquipment.versionOs}
                       onChange={(e) => setNewEquipment({...newEquipment, versionOs: e.target.value})}
                     />
@@ -974,7 +948,7 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="dateGarantie">Fin de garantie</Label>
+                    <Label htmlFor="dateGarantie">Date de fin de garantie</Label>
                     <Input
                       id="dateGarantie"
                       type="date"
@@ -987,7 +961,7 @@ export default function Home() {
                     <Input
                       id="prix"
                       type="number"
-                      step="0.01"
+                      placeholder="1500"
                       value={newEquipment.prix}
                       onChange={(e) => setNewEquipment({...newEquipment, prix: e.target.value})}
                     />
@@ -996,14 +970,16 @@ export default function Home() {
                     <Label htmlFor="fournisseur">Fournisseur</Label>
                     <Input
                       id="fournisseur"
+                      placeholder="Dell Technologies"
                       value={newEquipment.fournisseur}
                       onChange={(e) => setNewEquipment({...newEquipment, fournisseur: e.target.value})}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="facture">Facture</Label>
+                    <Label htmlFor="facture">Numéro de facture</Label>
                     <Input
                       id="facture"
+                      placeholder="FAC-2023-001"
                       value={newEquipment.facture}
                       onChange={(e) => setNewEquipment({...newEquipment, facture: e.target.value})}
                     />
@@ -1012,137 +988,135 @@ export default function Home() {
                     <Label htmlFor="notes">Notes</Label>
                     <Textarea
                       id="notes"
+                      placeholder="Notes supplémentaires..."
                       value={newEquipment.notes}
                       onChange={(e) => setNewEquipment({...newEquipment, notes: e.target.value})}
                     />
                   </div>
                   <div className="col-span-2">
-                    <Label htmlFor="commentaire">Commentaires techniques</Label>
+                    <Label htmlFor="commentaire">Commentaire interne</Label>
                     <Textarea
                       id="commentaire"
+                      placeholder="Commentaire pour l'administration..."
                       value={newEquipment.commentaire}
                       onChange={(e) => setNewEquipment({...newEquipment, commentaire: e.target.value})}
                     />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 mt-4">
+                <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setShowAddEquipment(false)}>
                     Annuler
                   </Button>
                   <Button onClick={handleAddEquipment}>
-                    Ajouter
+                    Ajouter l'équipement
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
           </div>
-
           <Card>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Asset Tag</TableHead>
+                    <TableHead>Tag</TableHead>
                     <TableHead>Nom</TableHead>
                     <TableHead>Modèle</TableHead>
-                    <TableHead>Établissement</TableHead>
                     <TableHead>Localisation</TableHead>
-                    <TableHead>IP</TableHead>
                     <TableHead>Statut</TableHead>
-                    <TableHead>Prix</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredEquipements.map((eq) => {
-                    const Icon = getCategoryIcon(eq.modele.categorie.icone);
-                    return (
-                      <TableRow key={eq.id}>
-                        <TableCell className="font-mono">{eq.assetTag || '-'}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Icon className="h-4 w-4" />
-                            {eq.nom || '-'}
-                          </div>
-                        </TableCell>
-                        <TableCell>
+                  {filteredEquipements.map((eq) => (
+                    <TableRow key={eq.id}>
+                      <TableCell className="font-medium">{eq.assetTag || '-'}</TableCell>
+                      <TableCell>{eq.nom || eq.hostname || '-'}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const IconComponent = getCategoryIcon(eq.modele.categorie.icone);
+                            return <IconComponent className="h-4 w-4" style={{ color: getStatusColor(eq.modele.categorie.icone) }} />;
+                          })()}
+                          <span>{eq.modele.fabricant.nom} - {eq.modele.nom}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {eq.localisation ? (
                           <div>
-                            <p className="font-medium">{eq.modele.nom}</p>
-                            <p className="text-sm text-muted-foreground">{eq.modele.fabricant.nom}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{eq.etablissement.nom}</TableCell>
-                        <TableCell>
-                          {eq.localisation ? (
-                            <div>
-                              <p className="font-medium">{eq.localisation.nom}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {eq.localisation.batiment} {eq.localisation.etage} {eq.localisation.salle}
-                              </p>
+                            <div>{eq.localisation.nom}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {eq.localisation.batiment} - {eq.localisation.etage} - {eq.localisation.salle}
                             </div>
-                          ) : '-'}
-                        </TableCell>
-                        <TableCell className="font-mono">{eq.ip || '-'}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant="secondary"
-                            style={{ backgroundColor: getStatusColor(eq.statut.couleur), color: 'white' }}
-                          >
-                            {eq.statut.nom}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {eq.prix ? `${eq.prix.toLocaleString('fr-FR')} €` : '-'}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                          </div>
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={eq.statut.type === 'disponible' ? 'default' : eq.statut.type === 'en_maintenance' ? 'destructive' : 'secondary'}
+                          style={{ backgroundColor: eq.statut.couleur ? `${eq.statut.couleur}20` : undefined, color: eq.statut.couleur || undefined }}
+                        >
+                          {eq.statut.nom}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="modeles" className="space-y-6">
+      {/* Modeles Content */}
+      {activeTab === 'modeles' && (
+        <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Modèles d'équipements</h2>
             <Dialog open={showAddModele} onOpenChange={setShowAddModele}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Ajouter un modèle
+                  Ajouter modèle
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Ajouter un modèle</DialogTitle>
+                  <DialogTitle>Ajouter un nouveau modèle</DialogTitle>
                   <DialogDescription>
-                    Créer un nouveau modèle d'équipement.
+                    Remplissez les informations du modèle ci-dessous.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <Label htmlFor="nomModele">Nom du modèle</Label>
+                    <Label htmlFor="modeleNom">Nom du modèle</Label>
                     <Input
-                      id="nomModele"
+                      id="modeleNom"
+                      placeholder="Dell PowerEdge R740"
                       value={newModele.nom}
                       onChange={(e) => setNewModele({...newModele, nom: e.target.value})}
-                      placeholder="PowerEdge R740"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="numeroModele">Numéro/Référence</Label>
+                    <Label htmlFor="modeleNumero">Numéro de modèle</Label>
                     <Input
-                      id="numeroModele"
+                      id="modeleNumero"
+                      placeholder="R740"
                       value={newModele.numero}
                       onChange={(e) => setNewModele({...newModele, numero: e.target.value})}
-                      placeholder="R740-001"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="fabricantModele">Fabricant</Label>
+                    <Label htmlFor="modeleFabricant">Fabricant</Label>
                     <Select value={newModele.fabricantId} onValueChange={(value) => setNewModele({...newModele, fabricantId: value})}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner" />
+                        <SelectValue placeholder="Sélectionner un fabricant" />
                       </SelectTrigger>
                       <SelectContent>
                         {fabricants.map((fab) => (
@@ -1154,10 +1128,10 @@ export default function Home() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="categorieModele">Catégorie</Label>
+                    <Label htmlFor="modeleCategorie">Catégorie</Label>
                     <Select value={newModele.categorieId} onValueChange={(value) => setNewModele({...newModele, categorieId: value})}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner" />
+                        <SelectValue placeholder="Sélectionner une catégorie" />
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((cat) => (
@@ -1169,26 +1143,35 @@ export default function Home() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="descriptionModele">Description</Label>
+                    <Label htmlFor="modeleDescription">Description</Label>
                     <Textarea
-                      id="descriptionModele"
+                      id="modeleDescription"
+                      placeholder="Description du modèle..."
                       value={newModele.description}
                       onChange={(e) => setNewModele({...newModele, description: e.target.value})}
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="modeleSpecs">Spécifications</Label>
+                    <Textarea
+                      id="modeleSpecs"
+                      placeholder="Spécifications techniques..."
+                      value={newModele.specs}
+                      onChange={(e) => setNewModele({...newModele, specs: e.target.value})}
+                    />
+                  </div>
                 </div>
-                <div className="flex justify-end gap-2 mt-4">
+                <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setShowAddModele(false)}>
                     Annuler
                   </Button>
                   <Button onClick={handleAddModele}>
-                    Ajouter
+                    Ajouter le modèle
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {modeles.map((modele) => {
               const Icon = getCategoryIcon(modele.categorie.icone);
@@ -1196,22 +1179,22 @@ export default function Home() {
                 <Card key={modele.id}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Icon className="h-5 w-5" />
+                      <Icon className="h-5 w-5" style={{ color: getStatusColor(modele.categorie.icone) }} />
                       {modele.nom}
                     </CardTitle>
                     <CardDescription>
-                      {modele.fabricant.nom} • {modele.numero}
+                      {modele.fabricant.nom} - {modele.numero}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Catégorie:</span>
-                        <Badge variant="secondary">{modele.categorie.nom}</Badge>
+                        <span className="text-sm">{modele.categorie.nom}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Équipements:</span>
-                        <Badge variant="outline">{modele._count.equipements}</Badge>
+                        <Badge variant="secondary">{modele._count.equipements}</Badge>
                       </div>
                       {modele.description && (
                         <p className="text-sm text-muted-foreground mt-2">{modele.description}</p>
@@ -1222,74 +1205,76 @@ export default function Home() {
               );
             })}
           </div>
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="fabricants" className="space-y-6">
+      {/* Fabricants Content */}
+      {activeTab === 'fabricants' && (
+        <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Fabricants</h2>
             <Dialog open={showAddFabricant} onOpenChange={setShowAddFabricant}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Ajouter un fabricant
+                  Ajouter fabricant
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Ajouter un fabricant</DialogTitle>
+                  <DialogTitle>Ajouter un nouveau fabricant</DialogTitle>
                   <DialogDescription>
-                    Ajouter un nouveau fabricant d'équipements.
+                    Remplissez les informations du fabricant ci-dessous.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <Label htmlFor="nomFabricant">Nom</Label>
+                    <Label htmlFor="fabricantNom">Nom du fabricant</Label>
                     <Input
-                      id="nomFabricant"
+                      id="fabricantNom"
+                      placeholder="Dell Technologies"
                       value={newFabricant.nom}
                       onChange={(e) => setNewFabricant({...newFabricant, nom: e.target.value})}
-                      placeholder="Dell"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="urlFabricant">Site web</Label>
+                    <Label htmlFor="fabricantUrl">Site web</Label>
                     <Input
-                      id="urlFabricant"
+                      id="fabricantUrl"
+                      placeholder="https://www.dell.com"
                       value={newFabricant.url}
                       onChange={(e) => setNewFabricant({...newFabricant, url: e.target.value})}
-                      placeholder="https://www.dell.com"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="supportFabricant">Support</Label>
+                    <Label htmlFor="fabricantSupport">Support</Label>
                     <Input
-                      id="supportFabricant"
+                      id="fabricantSupport"
+                      placeholder="support@dell.com"
                       value={newFabricant.support}
                       onChange={(e) => setNewFabricant({...newFabricant, support: e.target.value})}
-                      placeholder="support@dell.com"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="commentaireFabricant">Commentaire</Label>
+                    <Label htmlFor="fabricantCommentaire">Commentaire</Label>
                     <Textarea
-                      id="commentaireFabricant"
+                      id="fabricantCommentaire"
+                      placeholder="Notes sur le fabricant..."
                       value={newFabricant.commentaire}
                       onChange={(e) => setNewFabricant({...newFabricant, commentaire: e.target.value})}
                     />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 mt-4">
+                <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setShowAddFabricant(false)}>
                     Annuler
                   </Button>
                   <Button onClick={handleAddFabricant}>
-                    Ajouter
+                    Ajouter le fabricant
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {fabricants.map((fabricant) => (
               <Card key={fabricant.id}>
@@ -1300,7 +1285,12 @@ export default function Home() {
                   </CardTitle>
                   {fabricant.url && (
                     <CardDescription>
-                      <a href={fabricant.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                      <a 
+                        href={fabricant.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
                         Site web
                       </a>
                     </CardDescription>
@@ -1313,9 +1303,10 @@ export default function Home() {
                       <Badge variant="secondary">{fabricant._count.modeles}</Badge>
                     </div>
                     {fabricant.support && (
-                      <p className="text-sm text-muted-foreground">
-                        Support: {fabricant.support}
-                      </p>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Support:</span>
+                        <span className="text-sm">{fabricant.support}</span>
+                      </div>
                     )}
                     {fabricant.commentaire && (
                       <p className="text-sm text-muted-foreground mt-2">{fabricant.commentaire}</p>
@@ -1325,90 +1316,94 @@ export default function Home() {
               </Card>
             ))}
           </div>
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="etablissements" className="space-y-6">
+      {/* Etablissements Content */}
+      {activeTab === 'etablissements' && (
+        <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Établissements</h2>
             <Dialog open={showAddEtablissement} onOpenChange={setShowAddEtablissement}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Ajouter un établissement
+                  Ajouter établissement
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Ajouter un établissement</DialogTitle>
+                  <DialogTitle>Ajouter un nouvel établissement</DialogTitle>
                   <DialogDescription>
-                    Remplissez les informations pour ajouter un nouvel établissement.
+                    Remplissez les informations de l'établissement ci-dessous.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <Label htmlFor="nomEtablissement">Nom</Label>
+                    <Label htmlFor="etabNom">Nom</Label>
                     <Input
-                      id="nomEtablissement"
+                      id="etabNom"
+                      placeholder="Lycée Jean Jaurès"
                       value={newEtablissement.nom}
                       onChange={(e) => setNewEtablissement({...newEtablissement, nom: e.target.value})}
-                      placeholder="Nom de l'établissement"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="uaiEtablissement">UAI</Label>
+                    <Label htmlFor="etabUai">Code UAI</Label>
                     <Input
-                      id="uaiEtablissement"
+                      id="etabUai"
+                      placeholder="0123456A"
                       value={newEtablissement.uai}
                       onChange={(e) => setNewEtablissement({...newEtablissement, uai: e.target.value})}
-                      placeholder="Code UAI"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="adresseEtablissement">Adresse</Label>
+                    <Label htmlFor="etabAdresse">Adresse</Label>
                     <Input
-                      id="adresseEtablissement"
+                      id="etabAdresse"
+                      placeholder="123 Rue de l'École"
                       value={newEtablissement.adresse}
                       onChange={(e) => setNewEtablissement({...newEtablissement, adresse: e.target.value})}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="telephoneEtablissement">Téléphone</Label>
+                    <Label htmlFor="etabTelephone">Téléphone</Label>
                     <Input
-                      id="telephoneEtablissement"
+                      id="etabTelephone"
+                      placeholder="01 23 45 67 89"
                       value={newEtablissement.telephone}
                       onChange={(e) => setNewEtablissement({...newEtablissement, telephone: e.target.value})}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="emailEtablissement">Email</Label>
+                    <Label htmlFor="etabEmail">Email</Label>
                     <Input
-                      id="emailEtablissement"
-                      type="email"
+                      id="etabEmail"
+                      placeholder="contact@etablissement.fr"
                       value={newEtablissement.email}
                       onChange={(e) => setNewEtablissement({...newEtablissement, email: e.target.value})}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="commentaireEtablissement">Commentaire</Label>
+                    <Label htmlFor="etabCommentaire">Commentaire</Label>
                     <Textarea
-                      id="commentaireEtablissement"
+                      id="etabCommentaire"
+                      placeholder="Notes sur l'établissement..."
                       value={newEtablissement.commentaire}
                       onChange={(e) => setNewEtablissement({...newEtablissement, commentaire: e.target.value})}
                     />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 mt-4">
+                <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setShowAddEtablissement(false)}>
                     Annuler
                   </Button>
                   <Button onClick={handleAddEtablissement}>
-                    Ajouter
+                    Ajouter l'établissement
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {etablissements.map((etab) => (
               <Card key={etab.id}>
@@ -1418,34 +1413,39 @@ export default function Home() {
                     {etab.nom}
                   </CardTitle>
                   {etab.uai && (
-                    <CardDescription>UAI: {etab.uai}</CardDescription>
+                    <CardDescription>
+                      Code UAI: {etab.uai}
+                    </CardDescription>
                   )}
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
+                    {etab.adresse && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Adresse:</span>
+                        <span className="text-sm">{etab.adresse}</span>
+                      </div>
+                    )}
+                    {etab.telephone && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Téléphone:</span>
+                        <span className="text-sm">{etab.telephone}</span>
+                      </div>
+                    )}
+                    {etab.email && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Email:</span>
+                        <span className="text-sm">{etab.email}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Équipements:</span>
                       <Badge variant="secondary">{etab._count.equipements}</Badge>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Localisations:</span>
-                      <Badge variant="outline">{etab._count.localisations}</Badge>
+                      <Badge variant="secondary">{etab._count.localisations}</Badge>
                     </div>
-                    {etab.adresse && (
-                      <p className="text-sm text-muted-foreground">
-                        <MapPin className="h-3 w-3 inline mr-1" />
-                        {etab.adresse}
-                      </p>
-                    )}
-                    {etab.telephone && (
-                      <p className="text-sm text-muted-foreground">{etab.telephone}</p>
-                    )}
-                    {etab.email && (
-                      <p className="text-sm text-muted-foreground">{etab.email}</p>
-                    )}
-                    {etab.commentaire && (
-                      <p className="text-sm text-muted-foreground mt-2">{etab.commentaire}</p>
-                    )}
                     <div className="flex justify-end mt-4">
                       <Button variant="outline" size="sm" onClick={() => openEditEtablissement(etab)}>
                         <Pencil className="h-4 w-4 mr-2" />
@@ -1458,131 +1458,132 @@ export default function Home() {
             ))}
           </div>
           <Dialog open={!!editingEtablissement} onOpenChange={(open) => !open && resetEditEtablissement()}>
-            {editingEtablissement && (
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Modifier l'établissement</DialogTitle>
-                  <DialogDescription>
-                    Mettez à jour les informations de l'établissement sélectionné.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="editNomEtablissement">Nom</Label>
-                    <Input
-                      id="editNomEtablissement"
-                      value={editEtablissementData.nom}
-                      onChange={(e) => setEditEtablissementData({ ...editEtablissementData, nom: e.target.value })}
-                    />
+            <DialogContent>
+              {editingEtablissement && (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>Modifier l'établissement</DialogTitle>
+                    <DialogDescription>
+                      Modifiez les informations de l'établissement ci-dessous.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <Label htmlFor="editEtabNom">Nom</Label>
+                      <Input
+                        id="editEtabNom"
+                        value={editEtablissementData.nom}
+                        onChange={(e) => setEditEtablissementData({...editEtablissementData, nom: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editEtabUai">Code UAI</Label>
+                      <Input
+                        id="editEtabUai"
+                        value={editEtablissementData.uai}
+                        onChange={(e) => setEditEtablissementData({...editEtablissementData, uai: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editEtabAdresse">Adresse</Label>
+                      <Input
+                        id="editEtabAdresse"
+                        value={editEtablissementData.adresse}
+                        onChange={(e) => setEditEtablissementData({...editEtablissementData, adresse: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editEtabTelephone">Téléphone</Label>
+                      <Input
+                        id="editEtabTelephone"
+                        value={editEtablissementData.telephone}
+                        onChange={(e) => setEditEtablissementData({...editEtablissementData, telephone: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editEtabEmail">Email</Label>
+                      <Input
+                        id="editEtabEmail"
+                        value={editEtablissementData.email}
+                        onChange={(e) => setEditEtablissementData({...editEtablissementData, email: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editEtabCommentaire">Commentaire</Label>
+                      <Textarea
+                        id="editEtabCommentaire"
+                        value={editEtablissementData.commentaire}
+                        onChange={(e) => setEditEtablissementData({...editEtablissementData, commentaire: e.target.value})}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="editUaiEtablissement">UAI</Label>
-                    <Input
-                      id="editUaiEtablissement"
-                      value={editEtablissementData.uai}
-                      onChange={(e) => setEditEtablissementData({ ...editEtablissementData, uai: e.target.value })}
-                    />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={resetEditEtablissement}>
+                      Annuler
+                    </Button>
+                    <Button onClick={handleUpdateEtablissement}>
+                      Mettre à jour
+                    </Button>
                   </div>
-                  <div>
-                    <Label htmlFor="editAdresseEtablissement">Adresse</Label>
-                    <Input
-                      id="editAdresseEtablissement"
-                      value={editEtablissementData.adresse}
-                      onChange={(e) => setEditEtablissementData({ ...editEtablissementData, adresse: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editTelephoneEtablissement">Téléphone</Label>
-                    <Input
-                      id="editTelephoneEtablissement"
-                      value={editEtablissementData.telephone}
-                      onChange={(e) => setEditEtablissementData({ ...editEtablissementData, telephone: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editEmailEtablissement">Email</Label>
-                    <Input
-                      id="editEmailEtablissement"
-                      type="email"
-                      value={editEtablissementData.email}
-                      onChange={(e) => setEditEtablissementData({ ...editEtablissementData, email: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editCommentaireEtablissement">Commentaire</Label>
-                    <Textarea
-                      id="editCommentaireEtablissement"
-                      value={editEtablissementData.commentaire}
-                      onChange={(e) =>
-                        setEditEtablissementData({ ...editEtablissementData, commentaire: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2 mt-4">
-                  <Button variant="outline" onClick={resetEditEtablissement}>
-                    Annuler
-                  </Button>
-                  <Button onClick={handleUpdateEtablissement}>Enregistrer</Button>
-                </div>
-              </DialogContent>
-            )}
+                </>
+              )}
+            </DialogContent>
           </Dialog>
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="administration" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Tag className="h-5 w-5" />
-                  Catégories
-                </CardTitle>
-                <CardDescription>
-                  Gérez les catégories d'équipements
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {categories.map((cat) => {
-                    const Icon = getCategoryIcon(cat.icone);
-                    return (
-                      <div key={cat.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Icon className="h-4 w-4" />
-                          <span className="font-medium">{cat.nom}</span>
+      {/* Administration Content */}
+      {activeTab === 'administration' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Catégories
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {categories.map((cat) => {
+                  const Icon = getCategoryIcon(cat.icone);
+                  return (
+                    <div key={cat.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Icon className="h-5 w-5" style={{ color: getStatusColor(cat.icone) }} />
+                        <div>
+                          <p className="font-medium">{cat.nom}</p>
+                          <p className="text-sm text-muted-foreground">{cat._count.modeles} modèles</p>
                         </div>
-                        <Badge variant="secondary">{cat._count.modeles} modèles</Badge>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
                 <Dialog open={showAddCategorie} onOpenChange={setShowAddCategorie}>
                   <DialogTrigger asChild>
                     <Button className="w-full mt-4">
                       <Plus className="h-4 w-4 mr-2" />
-                      Ajouter une catégorie
+                      Ajouter catégorie
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Ajouter une catégorie</DialogTitle>
+                      <DialogTitle>Ajouter une nouvelle catégorie</DialogTitle>
                       <DialogDescription>
-                        Créer une nouvelle catégorie d'équipements.
+                        Remplissez les informations de la catégorie ci-dessous.
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
-                        <Label htmlFor="nomCategorie">Nom</Label>
+                        <Label htmlFor="categorieNom">Nom</Label>
                         <Input
-                          id="nomCategorie"
+                          id="categorieNom"
+                          placeholder="Serveur"
                           value={newCategorie.nom}
                           onChange={(e) => setNewCategorie({...newCategorie, nom: e.target.value})}
-                          placeholder="Serveurs"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="iconeCategorie">Icône</Label>
+                        <Label htmlFor="categorieIcone">Icône</Label>
                         <Select value={newCategorie.icone} onValueChange={(value) => setNewCategorie({...newCategorie, icone: value})}>
                           <SelectTrigger>
                             <SelectValue placeholder="Sélectionner une icône" />
@@ -1592,181 +1593,206 @@ export default function Home() {
                             <SelectItem value="Router">Routeur</SelectItem>
                             <SelectItem value="Wifi">WiFi</SelectItem>
                             <SelectItem value="Camera">Caméra</SelectItem>
-                            <SelectItem value="HardDrive">Stockage</SelectItem>
-                            <SelectItem value="Battery">Onduleur</SelectItem>
+                            <SelectItem value="HardDrive">Disque dur</SelectItem>
+                            <SelectItem value="Battery">Batterie</SelectItem>
                             <SelectItem value="Monitor">Moniteur</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor="descriptionCategorie">Description</Label>
+                        <Label htmlFor="categorieDescription">Description</Label>
                         <Textarea
-                          id="descriptionCategorie"
+                          id="categorieDescription"
+                          placeholder="Description de la catégorie..."
                           value={newCategorie.description}
                           onChange={(e) => setNewCategorie({...newCategorie, description: e.target.value})}
                         />
                       </div>
                     </div>
-                    <div className="flex justify-end gap-2 mt-4">
+                    <div className="flex justify-end gap-2">
                       <Button variant="outline" onClick={() => setShowAddCategorie(false)}>
                         Annuler
                       </Button>
                       <Button onClick={handleAddCategorie}>
-                        Ajouter
+                        Ajouter la catégorie
                       </Button>
                     </div>
                   </DialogContent>
                 </Dialog>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Statuts
-                </CardTitle>
-                <CardDescription>
-                  Gérez les statuts des équipements
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {statuts.map((stat) => (
-                    <div key={stat.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: getStatusColor(stat.couleur) }}
-                        />
-                        <span className="font-medium">{stat.nom}</span>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Statuts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {statuts.map((stat) => (
+                  <div key={stat.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: stat.couleur || '#6b7280' }}
+                      />
+                      <div>
+                        <p className="font-medium">{stat.nom}</p>
+                        <p className="text-sm text-muted-foreground">{stat.type} - {stat._count.equipements} équipements</p>
                       </div>
-                      <Badge variant="outline">{stat._count.equipements} équipements</Badge>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
                 <Dialog open={showAddStatut} onOpenChange={setShowAddStatut}>
                   <DialogTrigger asChild>
                     <Button className="w-full mt-4">
                       <Plus className="h-4 w-4 mr-2" />
-                      Ajouter un statut
+                      Ajouter statut
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Ajouter un statut</DialogTitle>
+                      <DialogTitle>Ajouter un nouveau statut</DialogTitle>
                       <DialogDescription>
-                        Créer un nouveau statut pour les équipements.
+                        Remplissez les informations du statut ci-dessous.
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
-                        <Label htmlFor="nomStatut">Nom</Label>
+                        <Label htmlFor="statutNom">Nom</Label>
                         <Input
-                          id="nomStatut"
+                          id="statutNom"
+                          placeholder="Disponible"
                           value={newStatut.nom}
                           onChange={(e) => setNewStatut({...newStatut, nom: e.target.value})}
-                          placeholder="Déployé"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="typeStatut">Type</Label>
+                        <Label htmlFor="statutType">Type</Label>
                         <Select value={newStatut.type} onValueChange={(value) => setNewStatut({...newStatut, type: value})}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner" />
+                            <SelectValue placeholder="Sélectionner un type" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="deployable">Déployable</SelectItem>
-                            <SelectItem value="pending">En attente</SelectItem>
-                            <SelectItem value="maintenance">Maintenance</SelectItem>
-                            <SelectItem value="archived">Archivé</SelectItem>
+                            <SelectItem value="disponible">Disponible</SelectItem>
+                            <SelectItem value="attribue">Attribué</SelectItem>
+                            <SelectItem value="en_maintenance">En maintenance</SelectItem>
+                            <SelectItem value="retire">Retiré</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor="couleurStatut">Couleur</Label>
+                        <Label htmlFor="statutCouleur">Couleur</Label>
                         <Input
-                          id="couleurStatut"
+                          id="statutCouleur"
                           type="color"
                           value={newStatut.couleur}
                           onChange={(e) => setNewStatut({...newStatut, couleur: e.target.value})}
                         />
                       </div>
                       <div>
-                        <Label htmlFor="descriptionStatut">Description</Label>
+                        <Label htmlFor="statutDescription">Description</Label>
                         <Textarea
-                          id="descriptionStatut"
+                          id="statutDescription"
+                          placeholder="Description du statut..."
                           value={newStatut.description}
                           onChange={(e) => setNewStatut({...newStatut, description: e.target.value})}
                         />
                       </div>
                     </div>
-                    <div className="flex justify-end gap-2 mt-4">
+                    <div className="flex justify-end gap-2">
                       <Button variant="outline" onClick={() => setShowAddStatut(false)}>
                         Annuler
                       </Button>
                       <Button onClick={handleAddStatut}>
-                        Ajouter
+                        Ajouter le statut
                       </Button>
                     </div>
                   </DialogContent>
                 </Dialog>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Localisations
-                </CardTitle>
-                <CardDescription>
-                  Gérez les localisations physiques
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {localisations.map((loc) => (
-                    <div key={loc.id} className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{loc.nom}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {loc.etablissement.nom} • {loc.batiment} {loc.etage} {loc.salle}
-                        </p>
-                      </div>
-                      <Badge variant="outline">{loc._count.equipements}</Badge>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Localisations
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {localisations.map((loc) => (
+                  <div key={loc.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium">{loc.nom}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {loc.etablissement.nom} - {loc.batiment} - {loc.etage} - {loc.salle}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{loc._count.equipements} équipements</p>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
                 <Dialog open={showAddLocalisation} onOpenChange={setShowAddLocalisation}>
                   <DialogTrigger asChild>
                     <Button className="w-full mt-4">
                       <Plus className="h-4 w-4 mr-2" />
-                      Ajouter une localisation
+                      Ajouter localisation
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Ajouter une localisation</DialogTitle>
+                      <DialogTitle>Ajouter une nouvelle localisation</DialogTitle>
                       <DialogDescription>
-                        Créer une nouvelle localisation physique.
+                        Remplissez les informations de la localisation ci-dessous.
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
-                        <Label htmlFor="nomLocalisation">Nom</Label>
+                        <Label htmlFor="localisationNom">Nom</Label>
                         <Input
-                          id="nomLocalisation"
+                          id="localisationNom"
+                          placeholder="Salle serveurs"
                           value={newLocalisation.nom}
                           onChange={(e) => setNewLocalisation({...newLocalisation, nom: e.target.value})}
-                          placeholder="Salle Serveurs"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="etablissementLocalisation">Établissement</Label>
+                        <Label htmlFor="localisationBatiment">Bâtiment</Label>
+                        <Input
+                          id="localisationBatiment"
+                          placeholder="A"
+                          value={newLocalisation.batiment}
+                          onChange={(e) => setNewLocalisation({...newLocalisation, batiment: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="localisationEtage">Étage</Label>
+                        <Input
+                          id="localisationEtage"
+                          placeholder="RDC"
+                          value={newLocalisation.etage}
+                          onChange={(e) => setNewLocalisation({...newLocalisation, etage: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="localisationSalle">Salle</Label>
+                        <Input
+                          id="localisationSalle"
+                          placeholder="101"
+                          value={newLocalisation.salle}
+                          onChange={(e) => setNewLocalisation({...newLocalisation, salle: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="localisationEtablissement">Établissement</Label>
                         <Select value={newLocalisation.etablissementId} onValueChange={(value) => setNewLocalisation({...newLocalisation, etablissementId: value})}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner" />
+                            <SelectValue placeholder="Sélectionner un établissement" />
                           </SelectTrigger>
                           <SelectContent>
                             {etablissements.map((etab) => (
@@ -1777,101 +1803,60 @@ export default function Home() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div>
-                          <Label htmlFor="batimentLocalisation">Bâtiment</Label>
-                          <Input
-                            id="batimentLocalisation"
-                            value={newLocalisation.batiment}
-                            onChange={(e) => setNewLocalisation({...newLocalisation, batiment: e.target.value})}
-                            placeholder="A"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="etageLocalisation">Étage</Label>
-                          <Input
-                            id="etageLocalisation"
-                            value={newLocalisation.etage}
-                            onChange={(e) => setNewLocalisation({...newLocalisation, etage: e.target.value})}
-                            placeholder="RDC"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="salleLocalisation">Salle</Label>
-                          <Input
-                            id="salleLocalisation"
-                            value={newLocalisation.salle}
-                            onChange={(e) => setNewLocalisation({...newLocalisation, salle: e.target.value})}
-                            placeholder="001"
-                          />
-                        </div>
-                      </div>
                       <div>
-                        <Label htmlFor="commentaireLocalisation">Commentaire</Label>
+                        <Label htmlFor="localisationCommentaire">Commentaire</Label>
                         <Textarea
-                          id="commentaireLocalisation"
+                          id="localisationCommentaire"
+                          placeholder="Notes sur la localisation..."
                           value={newLocalisation.commentaire}
                           onChange={(e) => setNewLocalisation({...newLocalisation, commentaire: e.target.value})}
                         />
                       </div>
                     </div>
-                    <div className="flex justify-end gap-2 mt-4">
+                    <div className="flex justify-end gap-2">
                       <Button variant="outline" onClick={() => setShowAddLocalisation(false)}>
                         Annuler
                       </Button>
                       <Button onClick={handleAddLocalisation}>
-                        Ajouter
+                        Ajouter la localisation
                       </Button>
                     </div>
                   </DialogContent>
                 </Dialog>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Wrench className="h-5 w-5" />
-                  Supervision
-                </CardTitle>
-                <CardDescription>
-                  Vue d'ensemble de la supervision réseau
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">
-                        {dashboardData?.supervisionTotals._sum.switchFederateur || 0}
-                      </p>
-                      <p className="text-sm text-muted-foreground">Switchs Fédérateurs</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">
-                        {dashboardData?.supervisionTotals._sum.switchExtremite || 0}
-                      </p>
-                      <p className="text-sm text-muted-foreground">Switchs Extrémité</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-purple-600">
-                        {dashboardData?.supervisionTotals._sum.bornesWifi || 0}
-                      </p>
-                      <p className="text-sm text-muted-foreground">Bornes WiFi</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-orange-600">
-                        {dashboardData?.supervisionTotals._sum.serveursPhysiques || 0}
-                      </p>
-                      <p className="text-sm text-muted-foreground">Serveurs Physiques</p>
-                    </div>
-                  </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Configuration
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-2">Base de données</h4>
+                  <p className="text-sm text-muted-foreground mb-2">SQLite - Prisma ORM</p>
+                  <Button variant="outline" size="sm">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Réinitialiser la base
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-2">Système</h4>
+                  <p className="text-sm text-muted-foreground mb-2">Next.js 14 - TypeScript</p>
+                  <Button variant="outline" size="sm">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Redémarrer le serveur
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
