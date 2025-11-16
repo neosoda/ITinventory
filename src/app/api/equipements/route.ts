@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
@@ -10,42 +11,42 @@ export async function GET(request: NextRequest) {
     const statutId = searchParams.get('statutId');
     const search = searchParams.get('search');
 
-    const where: any = {};
-    
+    const filters: Prisma.EquipementWhereInput[] = [];
+
     if (etablissementId) {
-      where.etablissementId = parseInt(etablissementId);
+      filters.push({ etablissementId: parseInt(etablissementId, 10) });
     }
-    
+
     if (categorieId) {
-      where.modele = {
-        categorieId: parseInt(categorieId)
-      };
+      filters.push({ modele: { categorieId: parseInt(categorieId, 10) } });
     }
-    
+
     if (fabricantId) {
-      where.modele = {
-        fabricantId: parseInt(fabricantId)
-      };
+      filters.push({ modele: { fabricantId: parseInt(fabricantId, 10) } });
     }
-    
+
     if (statutId) {
-      where.statutId = parseInt(statutId);
+      filters.push({ statutId: parseInt(statutId, 10) });
     }
-    
+
     if (search) {
-      where.OR = [
-        { nom: { contains: search, mode: 'insensitive' } },
-        { assetTag: { contains: search, mode: 'insensitive' } },
-        { serial: { contains: search, mode: 'insensitive' } },
-        { ip: { contains: search, mode: 'insensitive' } },
-        { hostname: { contains: search, mode: 'insensitive' } },
-        { mac: { contains: search, mode: 'insensitive' } },
-        { notes: { contains: search, mode: 'insensitive' } },
-        { commentaire: { contains: search, mode: 'insensitive' } },
-        { modele: { nom: { contains: search, mode: 'insensitive' } } },
-        { modele: { fabricant: { nom: { contains: search, mode: 'insensitive' } } } },
-      ];
+      filters.push({
+        OR: [
+          { nom: { contains: search, mode: 'insensitive' } },
+          { assetTag: { contains: search, mode: 'insensitive' } },
+          { serial: { contains: search, mode: 'insensitive' } },
+          { ip: { contains: search, mode: 'insensitive' } },
+          { hostname: { contains: search, mode: 'insensitive' } },
+          { mac: { contains: search, mode: 'insensitive' } },
+          { notes: { contains: search, mode: 'insensitive' } },
+          { commentaire: { contains: search, mode: 'insensitive' } },
+          { modele: { nom: { contains: search, mode: 'insensitive' } } },
+          { modele: { fabricant: { nom: { contains: search, mode: 'insensitive' } } } },
+        ],
+      });
     }
+
+    const where: Prisma.EquipementWhereInput = filters.length ? { AND: filters } : {};
 
     const equipements = await db.equipement.findMany({
       where,

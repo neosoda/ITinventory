@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -620,24 +620,26 @@ export default function Home() {
     }
   };
 
-  const filteredEquipements = equipements.filter((eq) => {
-    const matchesEtablissement = selectedEtablissement === 'all' || eq.etablissementId.toString() === selectedEtablissement;
-    const matchesCategorie = selectedCategorie === 'all' || eq.modele.categorie.id.toString() === selectedCategorie;
-    const matchesFabricant = selectedFabricant === 'all' || eq.modele.fabricant.id.toString() === selectedFabricant;
-    const matchesStatut = selectedStatut === 'all' || eq.statutId.toString() === selectedStatut;
-    const matchesSearch = searchTerm === '' || 
-      eq.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      eq.assetTag?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      eq.serial?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      eq.ip?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      eq.hostname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      eq.mac?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      eq.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      eq.modele.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      eq.modele.fabricant.nom.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredEquipements = useMemo(() => {
+    return equipements.filter((eq) => {
+      const matchesEtablissement = selectedEtablissement === 'all' || eq.etablissementId.toString() === selectedEtablissement;
+      const matchesCategorie = selectedCategorie === 'all' || eq.modele.categorie.id.toString() === selectedCategorie;
+      const matchesFabricant = selectedFabricant === 'all' || eq.modele.fabricant.id.toString() === selectedFabricant;
+      const matchesStatut = selectedStatut === 'all' || eq.statutId.toString() === selectedStatut;
+      const matchesSearch = searchTerm === '' ||
+        eq.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        eq.assetTag?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        eq.serial?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        eq.ip?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        eq.hostname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        eq.mac?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        eq.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        eq.modele.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        eq.modele.fabricant.nom.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesEtablissement && matchesCategorie && matchesFabricant && matchesStatut && matchesSearch;
-  });
+      return matchesEtablissement && matchesCategorie && matchesFabricant && matchesStatut && matchesSearch;
+    });
+  }, [equipements, selectedEtablissement, selectedCategorie, selectedFabricant, selectedStatut, searchTerm]);
 
   if (loading) {
     return <LoadingCard message="Chargement des données..." />;
@@ -675,7 +677,7 @@ export default function Home() {
       {activeTab === 'dashboard' && dashboardData && (
         <div className="space-y-6">
           {/* Stats Cards */}
-          <StatsCards data={dashboardData} />
+          <StatsCards counts={dashboardData.counts} valueStats={dashboardData.valueStats} />
           
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -780,6 +782,9 @@ export default function Home() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {filteredEquipements.length.toLocaleString('fr-FR')} / {equipements.length.toLocaleString('fr-FR')} équipements
             </div>
             <Dialog open={showAddEquipment} onOpenChange={setShowAddEquipment}>
               <DialogTrigger asChild>
