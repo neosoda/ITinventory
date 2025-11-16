@@ -170,6 +170,35 @@ Ce projet est open source. Consultez le fichier LICENSE pour plus d'informations
 4. Push vers la branche (`git push origin feature/AmazingFeature`)
 5. Ouvrez un Pull Request
 
+## ⬆️ Pousser les changements sur GitHub
+
+Si vous travaillez directement sur ce dépôt et souhaitez pousser votre travail sur GitHub, voici un rappel des étapes essentielles :
+
+1. **Vérifiez l'état du dépôt**
+   ```bash
+   git status
+   ```
+2. **Ajoutez les fichiers modifiés**
+   ```bash
+   git add <fichier> # ou git add . pour tout ajouter
+   ```
+3. **Créez un commit explicite**
+   ```bash
+   git commit -m "Description courte et claire"
+   ```
+4. **Définissez le dépôt distant si nécessaire**
+   ```bash
+   git remote add origin https://github.com/votre-compte/ITinventory.git
+   # ou mettez à jour l'URL existante
+   git remote set-url origin https://github.com/votre-compte/ITinventory.git
+   ```
+5. **Poussez vos commits**
+   ```bash
+   git push origin <nom-de-votre-branche>
+   ```
+
+💡 Astuce : utilisez `git push -u origin <branche>` la première fois afin d'associer la branche locale à la branche distante, ce qui vous permettra ensuite de simplement exécuter `git push`.
+
 ## 📞 Support
 
 Pour toute question ou support :
